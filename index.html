@@ -64,9 +64,27 @@
         <button class="carousel__btn carousel__btn--next" aria-label="下一張">❯</button>
       </div>
     </section>
+
+    <section class="message-board" aria-label="留言板">
+      <p class="message-board__hint">欢迎留下对角色或本作品想说的话~我们将筛选可爱的留言做成网页背景~</p>
+
+      <form id="message-form" class="message-form">
+        <label for="message-input" class="sr-only">留言内容</label>
+        <textarea id="message-input" name="message" maxlength="500" placeholder="写下你的留言（最多 500 字）" required></textarea>
+        <div class="message-form__meta">
+          <span id="message-count">0 / 500</span>
+          <button type="submit">发表留言</button>
+        </div>
+      </form>
+
+      <p id="message-status" class="message-status" aria-live="polite"></p>
+
+      <ul id="message-list" class="message-list" aria-label="已发表留言"></ul>
+    </section>
   </main>
 
-
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
