@@ -224,9 +224,9 @@ main::before {
 
 .carousel__viewport {
   --album-bg: none;
-  --frame-rotate: 0deg;
-  --frame-shift-x: 0px;
-  --frame-shift-y: 0px;
+  --fg-width: min(88%, 720px);
+  --fg-height: min(88%, 500px);
+  --fg-object-position: center center;
   position: relative;
   width: 100%;
   border-radius: 18px;
@@ -245,12 +245,12 @@ main::before {
 .carousel__viewport::before {
   content: "";
   position: absolute;
-  inset: -10%;
+  inset: 0;
   background-image: var(--album-bg);
   background-size: cover;
   background-position: center;
-  transform: scale(1.11);
-  filter: blur(34px) saturate(1.03);
+  transform: scale(1.06);
+  filter: blur(32px) saturate(1.03);
   opacity: 0.68;
   z-index: 0;
 }
@@ -270,20 +270,32 @@ main::before {
   grid-area: 1 / 1;
   z-index: 2;
   display: block;
-  width: min(88%, 720px);
-  height: min(88%, 500px);
+  width: var(--fg-width);
+  height: var(--fg-height);
   object-fit: contain;
-  object-position: center center;
+  object-position: var(--fg-object-position);
   filter: drop-shadow(0 8px 18px rgba(96, 95, 133, 0.18));
   opacity: 0;
-  transform: rotate(var(--img-rotate, var(--frame-rotate))) translate(var(--img-shift-x, var(--frame-shift-x)), var(--img-shift-y, var(--frame-shift-y))) scale(1);
+  transform: translate3d(0, 0, 0);
   border-radius: 12px;
-  transition: opacity 650ms ease, transform 650ms ease;
-  will-change: opacity, transform;
+  transition: opacity 650ms ease;
+  will-change: opacity;
 }
 
 .carousel__viewport img.is-active {
   opacity: 1;
+}
+
+.carousel__viewport.is-portrait {
+  --fg-width: min(80%, 500px);
+  --fg-height: min(96%, 540px);
+  --fg-object-position: center 52%;
+}
+
+.carousel__viewport.is-landscape {
+  --fg-width: min(90%, 760px);
+  --fg-height: min(88%, 500px);
+  --fg-object-position: center center;
 }
 
 .carousel__btn {
