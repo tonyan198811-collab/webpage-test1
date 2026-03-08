@@ -18,14 +18,17 @@ const albumImages = [
 const imageEl = document.getElementById('album-image');
 const prevBtn = document.querySelector('.carousel__btn--prev');
 const nextBtn = document.querySelector('.carousel__btn--next');
+const viewportEl = document.querySelector('.carousel__viewport');
 
 let currentIndex = 0;
 let timer = null;
 const INTERVAL_MS = 3500;
 
 function renderImage() {
-  imageEl.src = albumImages[currentIndex];
+  const currentImage = albumImages[currentIndex];
+  imageEl.src = currentImage;
   imageEl.alt = `吹響吧！上低音號影集圖片（${currentIndex + 1}/${albumImages.length}）`;
+  viewportEl.style.setProperty('--album-bg', `url("${currentImage}")`);
 }
 
 function showNext() {
