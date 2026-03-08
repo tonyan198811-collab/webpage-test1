@@ -59,24 +59,37 @@ function preloadImage(src) {
   return task;
 }
 
-function createOffsets(index) {
-  const rotations = [-2.3, -1.2, -0.6, 0.8, 1.6, 2.4];
-  const shiftsX = [-8, -4, 0, 4, 8, 2];
-  const shiftsY = [-5, -2, 0, 3, 5, 1];
+function getForegroundDisplayProfile(img) {
+  const naturalWidth = img.naturalWidth || 1;
+  const naturalHeight = img.naturalHeight || 1;
+  const ratio = naturalWidth / naturalHeight;
+
+  if (ratio < 0.9) {
+    const portraitStrength = Math.min(1, Math.max(0, (0.9 - ratio) / 0.35));
+    const verticalFocus = 50 + portraitStrength * 4;
+
+    return {
+      mode: 'portrait',
+      objectPosition: `center ${verticalFocus.toFixed(1)}%`
+    };
+  }
 
   return {
-    rotate: `${rotations[index % rotations.length]}deg`,
-    x: `${shiftsX[index % shiftsX.length]}px`,
-    y: `${shiftsY[index % shiftsY.length]}px`
+    mode: 'landscape',
+    objectPosition: 'center center'
   };
 }
 
-function applyImageState(imageEl, imageSrc, imageAlt, frameOffset) {
+function applyImageState(imageEl, imageSrc, imageAlt, displayProfile) {
   imageEl.src = imageSrc;
   imageEl.alt = imageAlt;
-  imageEl.style.setProperty('--img-rotate', frameOffset.rotate);
-  imageEl.style.setProperty('--img-shift-x', frameOffset.x);
-  imageEl.style.setProperty('--img-shift-y', frameOffset.y);
+  imageEl.style.setProperty('--fg-object-position', displayProfile.objectPosition);
+}
+
+function applyViewportMode(viewportEl, displayProfile) {
+  viewportEl.classList.toggle('is-portrait', displayProfile.mode === 'portrait');
+  viewportEl.classList.toggle('is-landscape', displayProfile.mode !== 'portrait');
+  viewportEl.style.setProperty('--fg-object-position', displayProfile.objectPosition);
 }
 
 function initCarousel(carouselEl) {
@@ -124,20 +137,18 @@ function initCarousel(carouselEl) {
       return;
     }
 
-    const frameOffset = createOffsets(currentIndex);
     const imageAlt = `${config.name}圖片（${currentIndex + 1}/${config.images.length}）`;
+    const displayProfile = getForegroundDisplayProfile(preloaded);
 
     viewportEl.style.setProperty('--album-bg', `url("${currentImage}")`);
-    viewportEl.style.setProperty('--frame-rotate', frameOffset.rotate);
-    viewportEl.style.setProperty('--frame-shift-x', frameOffset.x);
-    viewportEl.style.setProperty('--frame-shift-y', frameOffset.y);
+    applyViewportMode(viewportEl, displayProfile);
 
     if (!shouldAnimate) {
-      applyImageState(activeImageEl, currentImage, imageAlt, frameOffset);
+      applyImageState(activeImageEl, currentImage, imageAlt, displayProfile);
       activeImageEl.classList.add('is-active');
       inactiveImageEl.classList.remove('is-active');
     } else {
-      applyImageState(inactiveImageEl, currentImage, imageAlt, frameOffset);
+      applyImageState(inactiveImageEl, currentImage, imageAlt, displayProfile);
       inactiveImageEl.classList.add('is-active');
       activeImageEl.classList.remove('is-active');
 
