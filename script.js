@@ -40,6 +40,7 @@ const carouselConfigs = {
 };
 
 const INTERVAL_MS = 3500;
+const FADE_DURATION_MS = 650;
 const preloadedImages = new Map();
 
 function preloadImage(src) {
@@ -70,6 +71,14 @@ function createOffsets(index) {
   };
 }
 
+function applyImageState(imageEl, imageSrc, imageAlt, frameOffset) {
+  imageEl.src = imageSrc;
+  imageEl.alt = imageAlt;
+  imageEl.style.setProperty('--img-rotate', frameOffset.rotate);
+  imageEl.style.setProperty('--img-shift-x', frameOffset.x);
+  imageEl.style.setProperty('--img-shift-y', frameOffset.y);
+}
+
 function initCarousel(carouselEl) {
   const carouselKey = carouselEl.dataset.carousel;
   const config = carouselConfigs[carouselKey];
@@ -77,18 +86,28 @@ function initCarousel(carouselEl) {
     return;
   }
 
-  const imageEl = carouselEl.querySelector('img');
+  const initialImageEl = carouselEl.querySelector('img');
   const prevBtn = carouselEl.querySelector('.carousel__btn--prev');
   const nextBtn = carouselEl.querySelector('.carousel__btn--next');
   const viewportEl = carouselEl.querySelector('.carousel__viewport');
 
+  const secondImageEl = initialImageEl.cloneNode(false);
+  secondImageEl.removeAttribute('src');
+  secondImageEl.alt = '';
+  viewportEl.append(secondImageEl);
+
+  initialImageEl.classList.add('is-active');
+
+  let activeImageEl = initialImageEl;
+  let inactiveImageEl = secondImageEl;
   let currentIndex = 0;
   let timer = null;
   let renderToken = 0;
+  let cleanupTimer = null;
 
   config.images.forEach((src) => preloadImage(src));
 
-  async function renderImage() {
+  async function renderImage(shouldAnimate = true) {
     const token = ++renderToken;
     const currentImage = config.images[currentIndex];
     const preloaded = await preloadImage(currentImage);
@@ -106,17 +125,35 @@ function initCarousel(carouselEl) {
     }
 
     const frameOffset = createOffsets(currentIndex);
-    imageEl.classList.add('is-swapping');
+    const imageAlt = `${config.name}圖片（${currentIndex + 1}/${config.images.length}）`;
+
     viewportEl.style.setProperty('--album-bg', `url("${currentImage}")`);
     viewportEl.style.setProperty('--frame-rotate', frameOffset.rotate);
     viewportEl.style.setProperty('--frame-shift-x', frameOffset.x);
     viewportEl.style.setProperty('--frame-shift-y', frameOffset.y);
-    imageEl.src = currentImage;
-    imageEl.alt = `${config.name}圖片（${currentIndex + 1}/${config.images.length}）`;
 
-    requestAnimationFrame(() => {
-      imageEl.classList.remove('is-swapping');
-    });
+    if (!shouldAnimate) {
+      applyImageState(activeImageEl, currentImage, imageAlt, frameOffset);
+      activeImageEl.classList.add('is-active');
+      inactiveImageEl.classList.remove('is-active');
+    } else {
+      applyImageState(inactiveImageEl, currentImage, imageAlt, frameOffset);
+      inactiveImageEl.classList.add('is-active');
+      activeImageEl.classList.remove('is-active');
+
+      if (cleanupTimer) {
+        clearTimeout(cleanupTimer);
+      }
+
+      const previousActiveImageEl = activeImageEl;
+      activeImageEl = inactiveImageEl;
+      inactiveImageEl = previousActiveImageEl;
+
+      cleanupTimer = setTimeout(() => {
+        inactiveImageEl.removeAttribute('src');
+        inactiveImageEl.alt = '';
+      }, FADE_DURATION_MS + 80);
+    }
 
     const nextImage = config.images[(currentIndex + 1) % config.images.length];
     const prevImage = config.images[(currentIndex - 1 + config.images.length) % config.images.length];
@@ -151,7 +188,7 @@ function initCarousel(carouselEl) {
     restartAutoPlay();
   });
 
-  renderImage();
+  renderImage(false);
   restartAutoPlay();
 }
 
