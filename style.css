@@ -10,7 +10,6 @@
   --line: rgba(208, 201, 224, 0.62);
   --shadow: 0 10px 24px rgba(126, 121, 151, 0.1);
   --radius: 20px;
-  --album-bg: url("./SCAN_01-2 (1).jpg");
 }
 
 * {
@@ -66,7 +65,7 @@ body::after {
   min-height: 66vh;
   display: flex;
   align-items: center;
-  background: url("./SCAN_08.jpg") center 20% / cover no-repeat;
+  background: url("./封面页.png") center 20% / cover no-repeat;
   border-bottom: 1px solid rgba(227, 220, 239, 0.82);
 }
 
@@ -122,13 +121,6 @@ main::before {
   z-index: -1;
 }
 
-h2 {
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  margin: 0 0 1rem;
-  color: #5d5774;
-  font-weight: 620;
-}
-
 .showcase {
   position: relative;
   padding: 1.1rem;
@@ -149,8 +141,9 @@ h2 {
 
 .showcase__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+  padding: 0.4rem 0.4rem 0.7rem;
 }
 
 .card {
@@ -162,26 +155,64 @@ h2 {
   margin: 0;
 }
 
+.card--polaroid {
+  border-radius: 14px;
+  overflow: visible;
+  padding: 0.55rem 0.55rem 0;
+  background: linear-gradient(180deg, #fff, #fffafc);
+  border: 1px solid rgba(223, 213, 237, 0.8);
+  box-shadow: 0 9px 22px rgba(126, 119, 155, 0.14);
+}
+
+.card--a {
+  transform: rotate(-1.8deg) translateY(2px);
+}
+
+.card--b {
+  transform: rotate(1.4deg) translateY(-2px);
+}
+
+.card--c {
+  transform: rotate(1.2deg) translate(6px, -4px);
+}
+
+.card--d {
+  transform: rotate(-2.1deg) translate(-4px, 1px);
+}
+
 .card img {
   width: 100%;
-  height: 210px;
+  height: clamp(190px, 28vw, 280px);
   object-fit: cover;
   display: block;
+  border-radius: 12px;
 }
 
 .card figcaption {
   padding: 0.88rem 1rem 1.02rem;
   color: var(--subtext);
-  font-size: 0.93rem;
+  font-size: 0.98rem;
+  text-align: center;
 }
 
 .album {
-  margin-top: 3rem;
+  width: min(100%, 980px);
+  margin-top: 2.2rem;
   background: linear-gradient(180deg, rgba(255, 253, 255, 0.94), rgba(249, 247, 253, 0.88));
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 2px);
   padding: 1.35rem;
   box-shadow: var(--shadow);
+}
+
+.album--offset-left {
+  margin-left: 1.2rem;
+  margin-right: auto;
+}
+
+.album--offset-right {
+  margin-left: auto;
+  margin-right: 1.2rem;
 }
 
 .carousel {
@@ -192,6 +223,10 @@ h2 {
 }
 
 .carousel__viewport {
+  --album-bg: none;
+  --frame-rotate: 0deg;
+  --frame-shift-x: 0px;
+  --frame-shift-y: 0px;
   position: relative;
   width: 100%;
   border-radius: 18px;
@@ -235,19 +270,19 @@ h2 {
   position: relative;
   z-index: 2;
   display: block;
-  width: 100%;
-  height: 100%;
+  width: min(88%, 720px);
+  height: min(88%, 500px);
   object-fit: contain;
   object-position: center center;
   filter: drop-shadow(0 8px 18px rgba(96, 95, 133, 0.18));
   opacity: 1;
-  transform: scale(1);
+  transform: rotate(var(--frame-rotate)) translate(var(--frame-shift-x), var(--frame-shift-y)) scale(1);
+  border-radius: 12px;
   transition: opacity 280ms ease, transform 320ms ease;
 }
 
 .carousel__viewport img.is-swapping {
   opacity: 0.86;
-  transform: scale(0.994);
 }
 
 .carousel__btn {
@@ -272,6 +307,27 @@ h2 {
 @media (max-width: 700px) {
   .showcase {
     padding: 0.92rem;
+  }
+
+  .showcase__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card--a,
+  .card--b,
+  .card--c,
+  .card--d {
+    transform: rotate(0.3deg) translate(0, 0);
+  }
+
+  .album {
+    width: 100%;
+  }
+
+  .album--offset-left,
+  .album--offset-right {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .carousel {
