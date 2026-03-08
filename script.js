@@ -58,7 +58,7 @@ async function renderImage() {
     try {
       await preloaded.decode();
     } catch (error) {
-      // ignore decode errors and continue with already loaded image
+      // ignore decode errors
     }
   }
 
