@@ -22,6 +22,7 @@ const viewportEl = document.querySelector('.carousel__viewport');
 
 let currentIndex = 0;
 let timer = null;
+let renderToken = 0;
 const INTERVAL_MS = 3500;
 
 const preloadedImages = new Map();
@@ -33,8 +34,8 @@ function preloadImage(src) {
 
   const task = new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve(src);
-    img.onerror = () => resolve(src);
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(img);
     img.src = src;
   });
 
@@ -49,17 +50,35 @@ function preloadAllImages() {
 }
 
 async function renderImage() {
+  const token = ++renderToken;
   const currentImage = albumImages[currentIndex];
-  await preloadImage(currentImage);
+  const preloaded = await preloadImage(currentImage);
 
+  if (typeof preloaded.decode === 'function') {
+    try {
+      await preloaded.decode();
+    } catch (error) {
+      // ignore decode errors and continue with already loaded image
+    }
+  }
+
+  if (token !== renderToken) {
+    return;
+  }
+
+  imageEl.classList.add('is-swapping');
   viewportEl.style.setProperty('--album-bg', `url("${currentImage}")`);
-  imageEl.style.opacity = '0.92';
   imageEl.src = currentImage;
   imageEl.alt = `吹響吧！上低音號影集圖片（${currentIndex + 1}/${albumImages.length}）`;
 
   requestAnimationFrame(() => {
-    imageEl.style.opacity = '1';
+    imageEl.classList.remove('is-swapping');
   });
+
+  const nextImage = albumImages[(currentIndex + 1) % albumImages.length];
+  const prevImage = albumImages[(currentIndex - 1 + albumImages.length) % albumImages.length];
+  preloadImage(nextImage);
+  preloadImage(prevImage);
 }
 
 function showNext() {
