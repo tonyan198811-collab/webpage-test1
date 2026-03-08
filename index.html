@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>吹響吧！上低音號～試行網頁</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__overlay"></div>
+    <div class="container hero__content">
+      <p class="hero__kicker">Sound! Euphonium</p>
+      <h1>吹響吧！上低音號～試行網頁</h1>
+      <p class="hero__intro">
+        《吹響吧！上低音號》第一季以北宇治高中吹奏樂部為舞台，描繪社團成員在友情、競爭與自我成長之間的掙扎。
+        細膩的情感與熱血的合奏交織出青春獨有的悸動，讓每一次練習與每一段旋律都格外動人。
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="showcase" aria-label="首頁展示圖">
+      <h2>首頁精選畫面</h2>
+      <div class="showcase__grid">
+        <figure class="card">
+          <img src="./SCAN_1.jpg" alt="北宇治成員在教室裡的日常時光" />
+          <figcaption>社團日常的溫暖片刻</figcaption>
+        </figure>
+        <figure class="card">
+          <img src="./SCAN_08.jpg" alt="北宇治吹奏樂部成員在校園階梯上的青春合影" />
+          <figcaption>校園青春與團隊羈絆</figcaption>
+        </figure>
+        <figure class="card">
+          <img src="./SCAN_20.jpg" alt="長笛與短笛組成員的角色展示圖" />
+          <figcaption>聲部特色與角色魅力</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="album" aria-label="影集">
+      <div class="album__head">
+        <h2>影集</h2>
+        <p>自動輪播，亦可手動切換</p>
+      </div>
+
+      <div class="carousel" data-carousel>
+        <button class="carousel__btn carousel__btn--prev" aria-label="上一張">❮</button>
+
+        <div class="carousel__viewport">
+          <img id="album-image" src="./SCAN_01-2 (1).jpg" alt="吹響吧！上低音號影集圖片" />
+        </div>
+
+        <button class="carousel__btn carousel__btn--next" aria-label="下一張">❯</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>以《吹響吧！上低音號》第一季氛圍製作的繁體中文靜態頁面</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
