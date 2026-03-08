@@ -41,6 +41,8 @@ const carouselConfigs = {
 
 const INTERVAL_MS = 3500;
 const FADE_DURATION_MS = 650;
+const MESSAGE_MAX_LENGTH = 500;
+const MESSAGE_COLLECTION = 'messages';
 const preloadedImages = new Map();
 
 function preloadImage(src) {
@@ -203,6 +205,136 @@ function initCarousel(carouselEl) {
   restartAutoPlay();
 }
 
+function formatMessageTime(createdAt) {
+  if (!createdAt) {
+    return '刚刚';
+  }
+
+  const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function createMessageItem(messageData) {
+  const listItem = document.createElement('li');
+  listItem.className = 'message-item';
+
+  const contentEl = document.createElement('p');
+  contentEl.className = 'message-item__content';
+  contentEl.textContent = messageData.content || '';
+
+  const timeEl = document.createElement('div');
+  timeEl.className = 'message-item__time';
+  timeEl.textContent = `发表时间：${formatMessageTime(messageData.createdAt)}`;
+
+  listItem.append(contentEl, timeEl);
+  return listItem;
+}
+
+function initMessageBoard() {
+  const formEl = document.getElementById('message-form');
+  const inputEl = document.getElementById('message-input');
+  const countEl = document.getElementById('message-count');
+  const statusEl = document.getElementById('message-status');
+  const listEl = document.getElementById('message-list');
+
+  if (!formEl || !inputEl || !countEl || !statusEl || !listEl) {
+    return;
+  }
+
+  if (typeof firebase === 'undefined') {
+    statusEl.textContent = '留言功能加载失败，请稍后重试。';
+    return;
+  }
+
+  const firebaseConfig = {
+    apiKey: 'AIzaSyCfsfWRhJGLvU5yidWgsrsavJwz4nnVPKI',
+    authDomain: 'sound-euphonium-board-eef10.firebaseapp.com',
+    projectId: 'sound-euphonium-board-eef10',
+    storageBucket: 'sound-euphonium-board-eef10.firebasestorage.app',
+    messagingSenderId: '1033381734993',
+    appId: '1:1033381734993:web:341e3dc155ddb06815e670',
+    measurementId: 'G-YJZ3BQ0H4L'
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+
+  const db = firebase.firestore();
+  const messagesRef = db.collection(MESSAGE_COLLECTION);
+
+  inputEl.addEventListener('input', () => {
+    countEl.textContent = `${inputEl.value.length} / ${MESSAGE_MAX_LENGTH}`;
+  });
+
+  statusEl.textContent = '正在加载留言...';
+
+  messagesRef
+    .orderBy('createdAt', 'desc')
+    .limit(50)
+    .onSnapshot(
+      (snapshot) => {
+        listEl.innerHTML = '';
+
+        if (snapshot.empty) {
+          const emptyEl = document.createElement('li');
+          emptyEl.className = 'message-item';
+          emptyEl.textContent = '还没有留言，来留下第一句吧~';
+          listEl.append(emptyEl);
+        } else {
+          snapshot.forEach((doc) => {
+            listEl.append(createMessageItem(doc.data()));
+          });
+        }
+
+        statusEl.textContent = '';
+      },
+      () => {
+        statusEl.textContent = '读取留言失败，请稍后刷新重试。';
+      }
+    );
+
+  formEl.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const rawValue = inputEl.value.trim();
+    if (!rawValue) {
+      statusEl.textContent = '留言不能为空哦。';
+      return;
+    }
+
+    const content = rawValue.slice(0, MESSAGE_MAX_LENGTH);
+    const submitButton = formEl.querySelector('button[type="submit"]');
+
+    submitButton.disabled = true;
+    statusEl.textContent = '正在提交留言...';
+
+    try {
+      await messagesRef.add({
+        content,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      inputEl.value = '';
+      countEl.textContent = `0 / ${MESSAGE_MAX_LENGTH}`;
+      statusEl.textContent = '留言已发表，感谢你的分享！';
+    } catch (error) {
+      statusEl.textContent = '提交失败，请稍后重试。';
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+}
+
 document.querySelectorAll('[data-carousel]').forEach((carouselEl) => {
   initCarousel(carouselEl);
 });
+
+initMessageBoard();
