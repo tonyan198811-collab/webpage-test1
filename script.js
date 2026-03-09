@@ -300,12 +300,14 @@ function createMessageItem(messageData, onLike) {
 
   const likesEl = document.createElement('span');
   likesEl.className = 'message-item__likes';
-  likesEl.textContent = `❤️ ${messageData.likes || 0}`;
+  likesEl.textContent = `♡ ${messageData.likes || 0}`;
 
   const likeBtn = document.createElement('button');
   likeBtn.type = 'button';
   likeBtn.className = 'message-item__like-btn';
-  likeBtn.textContent = '點讚';
+  likeBtn.setAttribute('aria-label', '点赞');
+  likeBtn.title = '点赞';
+  likeBtn.textContent = '♥';
   likeBtn.addEventListener('click', () => onLike(messageData.id, likeBtn));
 
   footerEl.append(likesEl, likeBtn);
@@ -531,7 +533,7 @@ function initMessageBoard() {
 
     prevPageEl.disabled = currentPage <= 1;
     nextPageEl.disabled = currentPage >= totalPages;
-    pageIndicatorEl.textContent = `第 ${currentPage} 頁 / 共 ${totalPages} 頁`;
+    pageIndicatorEl.textContent = totalPages > 1 ? `Page ${currentPage} / ${totalPages}` : `Page ${currentPage}`;
   }
 
   async function handleLike(messageId, buttonEl) {
