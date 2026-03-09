@@ -47,6 +47,8 @@ const MESSAGE_COLLECTION = 'messages';
 const POPULAR_SIZE = 3;
 const PAGE_SIZE = 10;
 const LIKE_COOLDOWN_MS = 1200;
+const FLOATING_MIN_WIDTH = 180;
+const FLOATING_DESKTOP_MEDIA = '(max-width: 700px)';
 const preloadedImages = new Map();
 
 function preloadImage(src) {
@@ -311,6 +313,128 @@ function createMessageItem(messageData, onLike) {
   return listItem;
 }
 
+function pickFloatingMessage(messages) {
+  if (!messages.length) {
+    return null;
+  }
+
+  const popularFirst = getPopularMessages(messages)[0];
+  if (popularFirst) {
+    return popularFirst;
+  }
+
+  return sortByTimeDesc(messages)[0] || null;
+}
+
+function createFloatingArtController() {
+  const mainEl = document.querySelector('main.container');
+  const floatingEl = document.getElementById('floating-message-art');
+  const textEl = document.getElementById('floating-message-text');
+  const showcaseEl = document.querySelector('.showcase');
+  const messageBoardEl = document.querySelector('.message-board');
+
+  if (!mainEl || !floatingEl || !textEl || !showcaseEl || !messageBoardEl) {
+    return {
+      setMessage() {}
+    };
+  }
+
+  const mobileMedia = window.matchMedia(FLOATING_DESKTOP_MEDIA);
+  let x = 0;
+  let y = 0;
+  let vx = 0.16;
+  let vy = 0.11;
+  let lastTs = 0;
+  let rafId = null;
+
+  function computeBounds() {
+    const mainRect = mainEl.getBoundingClientRect();
+    const showcaseRect = showcaseEl.getBoundingClientRect();
+    const boardRect = messageBoardEl.getBoundingClientRect();
+    const artRect = floatingEl.getBoundingClientRect();
+
+    const width = Math.max(FLOATING_MIN_WIDTH, artRect.width || FLOATING_MIN_WIDTH);
+    const height = Math.max(62, artRect.height || 62);
+    const startY = Math.max(18, showcaseRect.bottom - mainRect.top + 14);
+    const endY = Math.max(startY + 22, boardRect.top - mainRect.top - height - 16);
+
+    return {
+      minX: 12,
+      maxX: Math.max(12, mainRect.width - width - 12),
+      minY: startY,
+      maxY: endY
+    };
+  }
+
+  function stop() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    floatingEl.classList.remove('is-visible');
+  }
+
+  function frame(ts) {
+    if (!lastTs) {
+      lastTs = ts;
+    }
+
+    const delta = Math.min(48, ts - lastTs);
+    lastTs = ts;
+    const bounds = computeBounds();
+
+    x += vx * delta;
+    y += vy * delta;
+
+    if (x <= bounds.minX) {
+      x = bounds.minX;
+      vx = Math.abs(vx);
+    } else if (x >= bounds.maxX) {
+      x = bounds.maxX;
+      vx = -Math.abs(vx);
+    }
+
+    if (y <= bounds.minY) {
+      y = bounds.minY;
+      vy = Math.abs(vy);
+    } else if (y >= bounds.maxY) {
+      y = bounds.maxY;
+      vy = -Math.abs(vy);
+    }
+
+    floatingEl.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function ensureStartPosition() {
+    const bounds = computeBounds();
+    if (!Number.isFinite(x) || x === 0) {
+      x = bounds.maxX;
+    }
+    if (!Number.isFinite(y) || y === 0) {
+      y = Math.max(bounds.minY, Math.min(bounds.maxY, bounds.minY + 12));
+    }
+  }
+
+  return {
+    setMessage(messageData) {
+      if (!messageData || mobileMedia.matches) {
+        stop();
+        return;
+      }
+
+      textEl.textContent = `${messageData.name || '匿名'}：${messageData.content || ''}`;
+      floatingEl.classList.add('is-visible');
+      ensureStartPosition();
+
+      if (rafId === null) {
+        lastTs = 0;
+        rafId = requestAnimationFrame(frame);
+      }
+    }
+  };
+}
+
 function initMessageBoard() {
   const formEl = document.getElementById('message-form');
   const nameEl = document.getElementById('name-input');
@@ -362,6 +486,7 @@ function initMessageBoard() {
   const db = firebase.firestore();
   const messagesRef = db.collection(MESSAGE_COLLECTION);
   const likeCooldownMap = new Map();
+  const floatingArt = createFloatingArtController();
 
   let allMessages = [];
   let currentPage = 1;
@@ -465,6 +590,7 @@ function initMessageBoard() {
       }));
 
       renderLists();
+      floatingArt.setMessage(pickFloatingMessage(allMessages));
       statusEl.textContent = '';
     },
     () => {

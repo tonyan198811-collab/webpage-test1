@@ -509,6 +509,45 @@ main::before {
   font-size: 0.9rem;
 }
 
+
+.floating-message-art {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: min(280px, 32vw);
+  min-width: 180px;
+  padding: 0.7rem 0.95rem;
+  border-radius: 14px;
+  border: 1px solid rgba(214, 205, 236, 0.6);
+  background: linear-gradient(145deg, rgba(255, 252, 255, 0.52), rgba(235, 243, 255, 0.34));
+  box-shadow:
+    0 0 18px rgba(203, 188, 241, 0.26),
+    0 8px 20px rgba(147, 156, 202, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transform: translate3d(-9999px, -9999px, 0);
+  transition: opacity 420ms ease;
+  z-index: 1;
+}
+
+.floating-message-art.is-visible {
+  opacity: 0.92;
+}
+
+.floating-message-art__text {
+  margin: 0;
+  color: #7468a6;
+  font-size: clamp(0.78rem, 1.25vw, 0.9rem);
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 10px rgba(213, 203, 241, 0.7);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -557,6 +596,10 @@ main::before {
 
   .message-board {
     padding: 1.1rem;
+  }
+
+  .floating-message-art {
+    display: none;
   }
 
   .message-form__meta {
