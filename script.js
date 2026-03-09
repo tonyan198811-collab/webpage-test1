@@ -41,8 +41,12 @@ const carouselConfigs = {
 
 const INTERVAL_MS = 3500;
 const FADE_DURATION_MS = 650;
-const MESSAGE_MAX_LENGTH = 500;
+const MESSAGE_NAME_MAX_LENGTH = 16;
+const MESSAGE_CONTENT_MAX_LENGTH = 100;
 const MESSAGE_COLLECTION = 'messages';
+const POPULAR_SIZE = 3;
+const PAGE_SIZE = 10;
+const LIKE_COOLDOWN_MS = 1200;
 const preloadedImages = new Map();
 
 function preloadImage(src) {
@@ -207,44 +211,132 @@ function initCarousel(carouselEl) {
 
 function formatMessageTime(createdAt) {
   if (!createdAt) {
-    return '刚刚';
+    return '剛剛';
   }
 
   const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
 
-  return new Intl.DateTimeFormat('zh-CN', {
+  if (diffMinutes < 1) {
+    return '剛剛';
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} 分鐘前`;
+  }
+
+  const isSameDay =
+    now.getFullYear() === date.getFullYear() &&
+    now.getMonth() === date.getMonth() &&
+    now.getDate() === date.getDate();
+
+  if (isSameDay) {
+    return `今天 ${new Intl.DateTimeFormat('zh-TW', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date)}`;
+  }
+
+  return new Intl.DateTimeFormat('zh-TW', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false
   }).format(date);
 }
 
-function createMessageItem(messageData) {
+function sortByTimeDesc(messages) {
+  return [...messages].sort((a, b) => {
+    const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+    const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function getPopularMessages(messages) {
+  return [...messages]
+    .sort((a, b) => {
+      const likeDiff = (b.likes || 0) - (a.likes || 0);
+      if (likeDiff !== 0) {
+        return likeDiff;
+      }
+
+      const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+      const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+      return bTime - aTime;
+    })
+    .slice(0, POPULAR_SIZE);
+}
+
+function createMessageItem(messageData, onLike) {
   const listItem = document.createElement('li');
   listItem.className = 'message-item';
 
+  const headerEl = document.createElement('div');
+  headerEl.className = 'message-item__header';
+
+  const signEl = document.createElement('span');
+  signEl.className = 'message-item__name';
+  signEl.textContent = `署名：${messageData.name || '匿名'}`;
+
+  const timeEl = document.createElement('span');
+  timeEl.className = 'message-item__time';
+  timeEl.textContent = formatMessageTime(messageData.createdAt);
+  headerEl.append(signEl, timeEl);
+
   const contentEl = document.createElement('p');
   contentEl.className = 'message-item__content';
-  contentEl.textContent = messageData.content || '';
+  contentEl.textContent = `${messageData.name || '匿名'}：${messageData.content || ''}`;
 
-  const timeEl = document.createElement('div');
-  timeEl.className = 'message-item__time';
-  timeEl.textContent = `发表时间：${formatMessageTime(messageData.createdAt)}`;
+  const footerEl = document.createElement('div');
+  footerEl.className = 'message-item__footer';
 
-  listItem.append(contentEl, timeEl);
+  const likesEl = document.createElement('span');
+  likesEl.className = 'message-item__likes';
+  likesEl.textContent = `❤️ ${messageData.likes || 0}`;
+
+  const likeBtn = document.createElement('button');
+  likeBtn.type = 'button';
+  likeBtn.className = 'message-item__like-btn';
+  likeBtn.textContent = '點讚';
+  likeBtn.addEventListener('click', () => onLike(messageData.id, likeBtn));
+
+  footerEl.append(likesEl, likeBtn);
+  listItem.append(headerEl, contentEl, footerEl);
   return listItem;
 }
 
 function initMessageBoard() {
   const formEl = document.getElementById('message-form');
+  const nameEl = document.getElementById('name-input');
   const inputEl = document.getElementById('message-input');
+  const nameCountEl = document.getElementById('name-count');
   const countEl = document.getElementById('message-count');
   const statusEl = document.getElementById('message-status');
   const listEl = document.getElementById('message-list');
+  const popularListEl = document.getElementById('popular-list');
+  const prevPageEl = document.getElementById('prev-page');
+  const nextPageEl = document.getElementById('next-page');
+  const pageIndicatorEl = document.getElementById('page-indicator');
 
-  if (!formEl || !inputEl || !countEl || !statusEl || !listEl) {
+  if (
+    !formEl ||
+    !nameEl ||
+    !inputEl ||
+    !nameCountEl ||
+    !countEl ||
+    !statusEl ||
+    !listEl ||
+    !popularListEl ||
+    !prevPageEl ||
+    !nextPageEl ||
+    !pageIndicatorEl
+  ) {
     return;
   }
 
@@ -269,48 +361,135 @@ function initMessageBoard() {
 
   const db = firebase.firestore();
   const messagesRef = db.collection(MESSAGE_COLLECTION);
+  const likeCooldownMap = new Map();
+
+  let allMessages = [];
+  let currentPage = 1;
+
+  function renderLists() {
+    const popular = getPopularMessages(allMessages);
+    const popularIds = new Set(popular.map((item) => item.id));
+    const normalMessages = sortByTimeDesc(allMessages.filter((item) => !popularIds.has(item.id)));
+
+    const totalPages = Math.max(1, Math.ceil(normalMessages.length / PAGE_SIZE));
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+    }
+
+    const pageStart = (currentPage - 1) * PAGE_SIZE;
+    const currentPageData = normalMessages.slice(pageStart, pageStart + PAGE_SIZE);
+
+    popularListEl.innerHTML = '';
+    listEl.innerHTML = '';
+
+    if (popular.length === 0) {
+      const emptyPopularEl = document.createElement('li');
+      emptyPopularEl.className = 'message-item message-item--empty';
+      emptyPopularEl.textContent = '尚無人氣留言，等你來留言與點讚~';
+      popularListEl.append(emptyPopularEl);
+    } else {
+      popular.forEach((item) => {
+        popularListEl.append(createMessageItem(item, handleLike));
+      });
+    }
+
+    if (currentPageData.length === 0) {
+      const emptyEl = document.createElement('li');
+      emptyEl.className = 'message-item message-item--empty';
+      emptyEl.textContent = '还没有留言，来留下第一句吧~';
+      listEl.append(emptyEl);
+    } else {
+      currentPageData.forEach((item) => {
+        listEl.append(createMessageItem(item, handleLike));
+      });
+    }
+
+    prevPageEl.disabled = currentPage <= 1;
+    nextPageEl.disabled = currentPage >= totalPages;
+    pageIndicatorEl.textContent = `第 ${currentPage} 頁 / 共 ${totalPages} 頁`;
+  }
+
+  async function handleLike(messageId, buttonEl) {
+    const now = Date.now();
+    const lastLikeAt = likeCooldownMap.get(messageId) || 0;
+
+    if (now - lastLikeAt < LIKE_COOLDOWN_MS) {
+      statusEl.textContent = '點讚太快了，請稍後再試~';
+      return;
+    }
+
+    likeCooldownMap.set(messageId, now);
+    buttonEl.disabled = true;
+
+    try {
+      await messagesRef.doc(messageId).update({
+        likes: firebase.firestore.FieldValue.increment(1)
+      });
+      statusEl.textContent = '';
+    } catch (error) {
+      statusEl.textContent = '點讚失败，请稍后重试。';
+      likeCooldownMap.delete(messageId);
+    } finally {
+      setTimeout(() => {
+        buttonEl.disabled = false;
+      }, LIKE_COOLDOWN_MS);
+    }
+  }
+
+  nameEl.addEventListener('input', () => {
+    nameCountEl.textContent = `${nameEl.value.length} / ${MESSAGE_NAME_MAX_LENGTH}`;
+  });
 
   inputEl.addEventListener('input', () => {
-    countEl.textContent = `${inputEl.value.length} / ${MESSAGE_MAX_LENGTH}`;
+    countEl.textContent = `${inputEl.value.length} / ${MESSAGE_CONTENT_MAX_LENGTH}`;
+  });
+
+  prevPageEl.addEventListener('click', () => {
+    currentPage -= 1;
+    renderLists();
+  });
+
+  nextPageEl.addEventListener('click', () => {
+    currentPage += 1;
+    renderLists();
   });
 
   statusEl.textContent = '正在加载留言...';
 
-  messagesRef
-    .orderBy('createdAt', 'desc')
-    .limit(50)
-    .onSnapshot(
-      (snapshot) => {
-        listEl.innerHTML = '';
+  messagesRef.orderBy('createdAt', 'desc').limit(200).onSnapshot(
+    (snapshot) => {
+      allMessages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        likes: typeof doc.data().likes === 'number' ? doc.data().likes : 0
+      }));
 
-        if (snapshot.empty) {
-          const emptyEl = document.createElement('li');
-          emptyEl.className = 'message-item';
-          emptyEl.textContent = '还没有留言，来留下第一句吧~';
-          listEl.append(emptyEl);
-        } else {
-          snapshot.forEach((doc) => {
-            listEl.append(createMessageItem(doc.data()));
-          });
-        }
-
-        statusEl.textContent = '';
-      },
-      () => {
-        statusEl.textContent = '读取留言失败，请稍后刷新重试。';
-      }
-    );
+      renderLists();
+      statusEl.textContent = '';
+    },
+    () => {
+      statusEl.textContent = '读取留言失败，请稍后刷新重试。';
+    }
+  );
 
   formEl.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const rawValue = inputEl.value.trim();
-    if (!rawValue) {
+    const rawName = nameEl.value.trim();
+    const rawContent = inputEl.value.trim();
+
+    if (!rawName) {
+      statusEl.textContent = '署名不能为空哦。';
+      return;
+    }
+
+    if (!rawContent) {
       statusEl.textContent = '留言不能为空哦。';
       return;
     }
 
-    const content = rawValue.slice(0, MESSAGE_MAX_LENGTH);
+    const name = rawName.slice(0, MESSAGE_NAME_MAX_LENGTH);
+    const content = rawContent.slice(0, MESSAGE_CONTENT_MAX_LENGTH);
     const submitButton = formEl.querySelector('button[type="submit"]');
 
     submitButton.disabled = true;
@@ -318,12 +497,16 @@ function initMessageBoard() {
 
     try {
       await messagesRef.add({
+        name,
         content,
+        likes: 0,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      inputEl.value = '';
-      countEl.textContent = `0 / ${MESSAGE_MAX_LENGTH}`;
+      formEl.reset();
+      nameCountEl.textContent = `0 / ${MESSAGE_NAME_MAX_LENGTH}`;
+      countEl.textContent = `0 / ${MESSAGE_CONTENT_MAX_LENGTH}`;
+      currentPage = 1;
       statusEl.textContent = '留言已发表，感谢你的分享！';
     } catch (error) {
       statusEl.textContent = '提交失败，请稍后重试。';
