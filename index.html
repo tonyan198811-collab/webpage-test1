@@ -69,17 +69,37 @@
       <p class="message-board__hint">欢迎留下对角色或本作品想说的话~我们将筛选可爱的留言做成网页背景~</p>
 
       <form id="message-form" class="message-form">
-        <label for="message-input" class="sr-only">留言内容</label>
-        <textarea id="message-input" name="message" maxlength="500" placeholder="写下你的留言（最多 500 字）" required></textarea>
+        <div class="message-form__field">
+          <label for="name-input">署名</label>
+          <input id="name-input" name="name" type="text" maxlength="16" placeholder="请输入署名（建议 12-16 字以内）" required />
+          <span id="name-count" class="message-form__count">0 / 16</span>
+        </div>
+        <div class="message-form__field">
+          <label for="message-input">留言内容</label>
+          <textarea id="message-input" name="message" maxlength="100" placeholder="写下你的留言（最多 100 字）" required></textarea>
+        </div>
         <div class="message-form__meta">
-          <span id="message-count">0 / 500</span>
+          <span id="message-count">0 / 100</span>
           <button type="submit">发表留言</button>
         </div>
       </form>
 
       <p id="message-status" class="message-status" aria-live="polite"></p>
 
-      <ul id="message-list" class="message-list" aria-label="已发表留言"></ul>
+      <section class="message-section" aria-label="人氣留言">
+        <h2 class="message-section__title">人氣留言</h2>
+        <ul id="popular-list" class="message-list" aria-label="人氣留言列表"></ul>
+      </section>
+
+      <section class="message-section" aria-label="最新留言">
+        <h2 class="message-section__title">最新留言</h2>
+        <ul id="message-list" class="message-list" aria-label="已发表留言"></ul>
+        <div class="message-pagination">
+          <button id="prev-page" type="button">上一頁</button>
+          <span id="page-indicator">第 1 頁</span>
+          <button id="next-page" type="button">下一頁</button>
+        </div>
+      </section>
     </section>
   </main>
 
