@@ -11,12 +11,13 @@
     <div class="hero__overlay"></div>
     <div class="container hero__content">
       <p class="hero__kicker">Sound! Euphonium</p>
-      <h1>吹響吧！上低音號｜主題頁</h1>
+      <h1>Sound! Euphonium | Gallery &amp; Message Board</h1>
       <p class="hero__subtitle-jp">響け！ユーフォニアム｜テーマページ</p>
       <p class="hero__intro">
         《吹響吧！上低音號》第一季以北宇治高中吹奏樂部為舞台，將友情、競爭與成長譜成細膩旋律。
         在安靜的日常與熱烈的合奏之間，青春的悸動悄悄被放大。
       </p>
+      <p class="hero__intro-en">A fan-made page for Sound! Euphonium, featuring a selected gallery and a message board for sharing your thoughts on the characters and the series.</p>
     </div>
   </header>
 
@@ -73,28 +74,30 @@
 
     <section class="message-board" aria-label="留言板">
       <p class="message-board__hint">欢迎留下对角色或本作品想说的话~我们将筛选可爱的留言做成网页背景~</p>
-      <p class="message-board__hint-jp">キャラクターや作品への想いを、ぜひここに残してください。かわいいメッセージはページ背景として紹介するかもしれません。</p>
+      <p class="message-board__hint-en">Leave a message for your favorite character or for the series~ Cute messages may be selected and turned into part of the page background.</p>
 
       <form id="message-form" class="message-form">
         <div class="message-form__field">
-          <label for="name-input">署名</label>
+          <label for="name-input">署名（名前 / Name）</label>
           <input id="name-input" name="name" type="text" maxlength="16" placeholder="请输入署名（建议 12-16 字以内）" required />
           <span id="name-count" class="message-form__count">0 / 16</span>
         </div>
         <div class="message-form__field">
-          <label for="message-input">留言内容</label>
+          <label for="message-input">留言内容（メッセージ / Message）</label>
           <textarea id="message-input" name="message" maxlength="100" placeholder="写下你的留言（最多 100 字）" required></textarea>
         </div>
         <div class="message-form__meta">
           <span id="message-count">0 / 100</span>
-          <button type="submit">发表留言</button>
+          <button type="submit" aria-label="发送留言" title="发送留言">
+            <span aria-hidden="true">🛩️</span>
+          </button>
         </div>
       </form>
 
       <p id="message-status" class="message-status" aria-live="polite"></p>
 
       <section class="message-section" aria-label="人氣留言">
-        <h2 class="message-section__title">人氣留言</h2>
+        <h2 class="message-section__title">人氣留言（人気メッセージ / Popular Messages）</h2>
         <ul id="popular-list" class="message-list" aria-label="人氣留言列表"></ul>
       </section>
 
@@ -103,7 +106,7 @@
         <ul id="message-list" class="message-list" aria-label="已发表留言"></ul>
         <div class="message-pagination">
           <button id="prev-page" type="button">上一頁</button>
-          <span id="page-indicator">第 1 頁</span>
+          <span id="page-indicator">Page 1</span>
           <button id="next-page" type="button">下一頁</button>
         </div>
       </section>
